@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Expo + Metro need a flat node_modules: https://docs.expo.dev/guides/monorepos/
+nodeLinker: hoisted
+shamefullyHoist: true
+
+# pnpm 12 (strictDepBuilds) refuses to install in CI unless build scripts are reviewed here.
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+  sharp: true
+  "@parcel/watcher": true
+

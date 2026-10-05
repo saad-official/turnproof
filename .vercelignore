@@ -1,0 +1,12 @@
+apps/mobile/android
+apps/mobile/ios
+apps/mobile/.expo
+apps/mobile/assets
+.pglite
+**/.pglite
+**/node_modules
+**/.next
+**/.gradle
+**/build
+docs
+*.log
