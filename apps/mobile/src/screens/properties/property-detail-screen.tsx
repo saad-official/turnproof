@@ -16,18 +16,14 @@ import { SkeletonList } from '@/components/skeleton';
 import { showToast } from '@/components/toast';
 import { dateLabel, formatHhmm, plural } from '@/constants/format';
 import { icons, roomIcons } from '@/constants/icons';
-import { ApiError, deleteProperty, leaveProperty, removePropertyMember, rotateInviteCode, shareProperty } from '@/data';
+import { propertyErrorMessage } from '@/constants/messages';
+import { deleteProperty, leaveProperty, removePropertyMember, rotateInviteCode, shareProperty } from '@/data';
 import { useProperty } from '@/hooks/use-properties';
 import { usePropertyMembers } from '@/hooks/use-property-members';
 import { useSession } from '@/hooks/use-session';
 import { useUpcomingTurnovers } from '@/hooks/use-turnovers';
 import { haptics } from '@/native/haptics';
 import { spacing, useTheme } from '@/theme';
-
-function apiMessage(e: unknown, fallback: string): string {
-  if (e instanceof ApiError) return e.status === 0 ? "You're offline. Try again when you're connected." : e.message || fallback;
-  return e instanceof Error ? e.message : fallback;
-}
 
 async function shareCode(name: string, code: string) {
   await Share.share({
@@ -71,7 +67,7 @@ export function PropertyDetailScreen() {
       if (view.inviteCode) await shareCode(property.name, view.inviteCode);
     } catch (e) {
       haptics.error();
-      showToast({ message: apiMessage(e, 'Could not share the property.') });
+      showToast({ message: propertyErrorMessage(e, 'Could not share the property.') });
     } finally {
       setSharing(false);
     }
@@ -87,7 +83,7 @@ export function PropertyDetailScreen() {
           try {
             await rotateInviteCode(property.id);
           } catch (e) {
-            showToast({ message: apiMessage(e, 'Could not make a new code.') });
+            showToast({ message: propertyErrorMessage(e, 'Could not make a new code.') });
           } finally {
             setRotating(false);
           }
@@ -106,7 +102,7 @@ export function PropertyDetailScreen() {
         onPress: () => {
           removePropertyMember(property.id, userId)
             .then(() => shared.refresh())
-            .catch((e: unknown) => showToast({ message: apiMessage(e, 'Could not remove them.') }));
+            .catch((e: unknown) => showToast({ message: propertyErrorMessage(e, 'Could not remove them.') }));
         },
       },
     ]);

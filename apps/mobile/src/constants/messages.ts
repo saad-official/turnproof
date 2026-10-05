@@ -1,11 +1,15 @@
 // Plain-language copy for the failure reasons the data layer and adapters return.
-import type { ActionFailure, PublishProofResult } from '@/data';
+import { ApiError, type ActionFailure, PropertyClientError, type PublishProofResult } from '@/data';
 import type { CaptureErrorCode } from '@/native/capture';
 
 export function turnoverFailureMessage(reason: ActionFailure | 'invalid-photo' | 'invalid-issue' | string): string {
   switch (reason) {
     case 'not-found':
       return 'This turnover no longer exists.';
+    case 'in-progress':
+      return 'This turnover is running. Finish or abandon it first.';
+    case 'undo-expired':
+      return 'Too late to undo: the turnover was already removed.';
     case 'not-in-progress':
       return 'This turnover is not running any more.';
     case 'not-scheduled':
@@ -29,6 +33,28 @@ export function turnoverFailureMessage(reason: ActionFailure | 'invalid-photo' |
     default:
       return 'Something went wrong. Please try again.';
   }
+}
+
+const OFFLINE = "You're offline. Try again when you're connected.";
+
+/** Copy for `joinProperty` / `shareProperty` rejections (and other API errors as a fallback). */
+export function propertyErrorMessage(e: unknown, fallback: string): string {
+  if (e instanceof PropertyClientError) {
+    switch (e.code) {
+      case 'offline':
+        return OFFLINE;
+      case 'unauthorized':
+        return 'Your session ended. Sign in again to continue.';
+      case 'invite_not_found':
+        return 'No property uses that code. Check it with your host.';
+      case 'already_member':
+        return 'You already have this property.';
+      case 'server':
+        return e.message || fallback;
+    }
+  }
+  if (e instanceof ApiError) return e.status === 0 ? OFFLINE : e.message || fallback;
+  return e instanceof Error ? e.message || fallback : fallback;
 }
 
 export function captureErrorMessage(code: CaptureErrorCode): string {

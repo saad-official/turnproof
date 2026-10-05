@@ -27,6 +27,7 @@ export const PHOTO_PHASES = ["before", "after", "issue", "reference"] as const;
 export const PHOTO_SOURCES = ["camera", "gallery"] as const;
 export const ISSUE_SEVERITIES = ["low", "medium", "high"] as const;
 export const USER_ROLES = ["cleaner", "host", "both"] as const;
+export const APPEARANCES = ["system", "light", "dark"] as const;
 
 export const RoomKindSchema = z.enum(ROOM_KINDS);
 export const TurnoverStatusSchema = z.enum(TURNOVER_STATUSES);
@@ -34,6 +35,7 @@ export const PhotoPhaseSchema = z.enum(PHOTO_PHASES);
 export const PhotoSourceSchema = z.enum(PHOTO_SOURCES);
 export const IssueSeveritySchema = z.enum(ISSUE_SEVERITIES);
 export const UserRoleSchema = z.enum(USER_ROLES);
+export const AppearanceSchema = z.enum(APPEARANCES);
 
 const unique = <T>(xs: readonly T[]) => new Set(xs).size === xs.length;
 const before = (a: string | null | undefined, b: string | null | undefined) => !a || !b || Date.parse(a) <= Date.parse(b);
@@ -195,6 +197,10 @@ export const SettingsSchema = z.object({
   /** Record GPS in photo stamps (when the OS permits). */
   stampGps: z.boolean().default(true),
   displayName: z.string().trim().min(1).max(60).optional(),
+  /** Colour scheme: follow the OS, or force light / dark. */
+  appearance: AppearanceSchema.default("system"),
+  /** Lifetime of a newly published proof link, in days. */
+  proofExpiryDays: z.number().int().min(1).max(365).default(60),
 });
 
 export const DEFAULT_SETTINGS: Settings = SettingsSchema.parse({});
@@ -247,6 +253,7 @@ export type PhotoPhase = z.infer<typeof PhotoPhaseSchema>;
 export type PhotoSource = z.infer<typeof PhotoSourceSchema>;
 export type IssueSeverity = z.infer<typeof IssueSeveritySchema>;
 export type UserRole = z.infer<typeof UserRoleSchema>;
+export type Appearance = z.infer<typeof AppearanceSchema>;
 export type ChecklistItem = z.infer<typeof ChecklistItemSchema>;
 export type Room = z.infer<typeof RoomSchema>;
 export type Property = z.infer<typeof PropertySchema>;

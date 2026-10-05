@@ -1,4 +1,4 @@
-import type { UserRole } from '@turnproof/shared';
+import type { Appearance, UserRole } from '@turnproof/shared';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -17,14 +17,6 @@ import { dateTimeLabel, plural } from '@/constants/format';
 import { icons } from '@/constants/icons';
 import { links } from '@/constants/links';
 import { deleteAllLocalData, seedDemoData, signOutAndForget, syncNow, updateSettings } from '@/data';
-import {
-  PROOF_DAY_OPTIONS,
-  setAppearance,
-  setProofExpiryDays,
-  useAppearance,
-  useProofExpiryDays,
-  type AppearancePreference,
-} from '@/hooks/use-app-preferences';
 import { useLocationPermission, useNotificationPermission } from '@/hooks/use-permissions';
 import { useSession } from '@/hooks/use-session';
 import { useSettings } from '@/hooks/use-settings';
@@ -48,7 +40,9 @@ const LEADS = [
   { value: 120, label: '2 h' },
 ] as const;
 
-const APPEARANCE: readonly { value: AppearancePreference; label: string }[] = [
+const PROOF_DAY_OPTIONS = [7, 30, 60] as const;
+
+const APPEARANCE: readonly { value: Appearance; label: string }[] = [
   { value: 'system', label: 'System' },
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
@@ -74,8 +68,6 @@ export function SettingsScreen() {
   const { data: session } = useSession();
   const sync = useSyncStatus();
   const queue = useUploadQueue();
-  const appearance = useAppearance();
-  const proofDays = useProofExpiryDays();
   const [notif, refreshNotif] = useNotificationPermission();
   const [location, refreshLocation] = useLocationPermission();
   const [exporting, setExporting] = useState(false);
@@ -193,8 +185,8 @@ export function SettingsScreen() {
         <SegmentedControl
           accessibilityLabel="New proof links expire after"
           options={PROOF_DAY_OPTIONS.map((d) => ({ value: d, label: `${d} days` }))}
-          value={proofDays}
-          onChange={setProofExpiryDays}
+          value={settings.proofExpiryDays}
+          onChange={(proofExpiryDays) => void updateSettings({ proofExpiryDays })}
         />
         <AppText variant="caption" tone="secondary" style={{ paddingHorizontal: spacing.md }}>
           How long a newly published link stays open. You can revoke any link early from its turnover.
@@ -234,7 +226,12 @@ export function SettingsScreen() {
       </Section>
 
       <Section title="Appearance">
-        <SegmentedControl accessibilityLabel="Appearance" options={APPEARANCE} value={appearance} onChange={setAppearance} />
+        <SegmentedControl
+          accessibilityLabel="Appearance"
+          options={APPEARANCE}
+          value={settings.appearance}
+          onChange={(appearance) => void updateSettings({ appearance })}
+        />
       </Section>
 
       <Section title="Uploads">

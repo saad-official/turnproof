@@ -11,7 +11,7 @@ describe("package entry", () => {
       // schemas
       "PropertySchema", "RoomSchema", "ChecklistItemSchema", "TurnoverSchema", "RoomStateSchema", "PhotoSchema", "StampSchema",
       "IssueSchema", "ProofSchema", "SettingsSchema", "DEFAULT_SETTINGS", "PropertyMemberSchema", "DeviceSchema",
-      "SyncTablesSchema", "SyncPushRequestSchema", "SyncPushResponseSchema", "SyncPullResponseSchema", "ROOM_KINDS", "InviteCodeSchema",
+      "AppearanceSchema", "APPEARANCES", "SyncTablesSchema", "SyncPushRequestSchema", "SyncPushResponseSchema", "SyncPullResponseSchema", "ROOM_KINDS", "InviteCodeSchema",
       // domain
       "ROOM_TEMPLATES", "DEFAULT_SUPPLIES", "newRoomFromTemplate", "defaultPropertyRooms",
       "roomProgress", "turnoverProgress", "nextIncompleteRoomIndex",
@@ -19,7 +19,7 @@ describe("package entry", () => {
       "isSha256Hex", "sameSha256", "stampIsVerified", "stampLabel", "STAMP_WINDOW_MINUTES", "STAMP_REASON_TEXT",
       "upcomingTurnovers", "reminderAt", "countdownLabel", "turnoverWindow", "isOverdue", "groupByDay", "formatMinutes",
       "proofModel", "turnoverPdfModel", "toCsvRows", "CSV_HEADER",
-      "newProofSlug", "isProofSlug", "proofExpiry", "proofState", "proofUrl", "PROOF_SLUG_ALPHABET", "DEFAULT_PROOF_DAYS",
+      "newProofSlug", "isProofSlug", "proofExpiry", "proofState", "latestProofState", "proofUrl", "PROOF_SLUG_ALPHABET", "DEFAULT_PROOF_DAYS",
     ];
     for (const n of names) expect(shared, n).toHaveProperty(n);
   });

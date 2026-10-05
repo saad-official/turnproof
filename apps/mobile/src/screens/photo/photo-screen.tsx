@@ -13,7 +13,7 @@ import { StatePill } from '@/components/state-pill';
 import { icons } from '@/constants/icons';
 import { turnoverFailureMessage } from '@/constants/messages';
 import { deletePhoto, deviceTimeZone, type LocalPhoto } from '@/data';
-import { usePhotos } from '@/hooks/use-photos';
+import { usePhoto } from '@/hooks/use-photos';
 import { useSettings } from '@/hooks/use-settings';
 import { useTurnover } from '@/hooks/use-turnovers';
 import { haptics } from '@/native/haptics';
@@ -31,14 +31,13 @@ const UPLOAD: Record<LocalPhoto['uploadState'], string> = {
 /** `photo/[id]?turnoverId`: the photo with its full stamp, verification and (while running) Retake. */
 export function PhotoScreen() {
   const { id, turnoverId } = useLocalSearchParams<{ id: string; turnoverId: string }>();
-  const photos = usePhotos(turnoverId);
-  const turnover = useTurnover(turnoverId);
+  const photo = usePhoto(id);
+  const turnover = useTurnover(photo?.turnoverId ?? turnoverId);
   const { stampGps } = useSettings();
   const { width } = useWindowDimensions();
   const { colors } = useTheme();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const photo = photos.find((p) => p.id === id);
 
   if (!photo) {
     return (

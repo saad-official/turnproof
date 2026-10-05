@@ -126,4 +126,15 @@ describe("groupByDay", () => {
       ["2026-10-07", [uid(2), uid(3)]],
     ]);
   });
+  it("groups any item with a scheduledFor and keeps its extra fields", () => {
+    const list = [
+      { scheduledFor: "2026-10-07T15:00:00.000Z", label: "b" },
+      { scheduledFor: "2026-10-07T02:00:00.000Z", label: "a" },
+    ];
+    const groups = groupByDay(list, TZ);
+    expect(groups.map((g) => [g.dayKey, g.turnovers.map((x) => x.label)])).toEqual([
+      ["2026-10-06", ["a"]],
+      ["2026-10-07", ["b"]],
+    ]);
+  });
 });

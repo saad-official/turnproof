@@ -13,9 +13,9 @@ import { dateLabel } from '@/constants/format';
 import { icons } from '@/constants/icons';
 import { publishFailureMessage } from '@/constants/messages';
 import { publishProof, revokeProof } from '@/data';
-import { proofExpiryDays } from '@/hooks/use-app-preferences';
 import { useProofs } from '@/hooks/use-proofs';
 import { useSession } from '@/hooks/use-session';
+import { useSettings } from '@/hooks/use-settings';
 import { haptics } from '@/native/haptics';
 import { radius, spacing, useTheme } from '@/theme';
 
@@ -31,6 +31,7 @@ export function ProofSection({ turnoverId, propertyName }: { turnoverId: string;
   const { colors, shadow } = useTheme();
   const { data: session, isPending } = useSession();
   const { proofs, current } = useProofs(turnoverId);
+  const { proofExpiryDays } = useSettings();
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export function ProofSection({ turnoverId, propertyName }: { turnoverId: string;
     abort.current = new AbortController();
     try {
       const r = await publishProof(turnoverId, {
-        expiresInDays: proofExpiryDays(),
+        expiresInDays: proofExpiryDays,
         signal: abort.current.signal,
         onProgress: (done, total) => setProgress({ done, total }),
       });
@@ -152,7 +153,7 @@ export function ProofSection({ turnoverId, propertyName }: { turnoverId: string;
             </AppText>
           ) : (
             <AppText variant="caption" tone="secondary">
-              {`The link expires after ${proofExpiryDays()} days (change the default in Settings) and you can revoke it any time.`}
+              {`The link expires after ${proofExpiryDays} days (change the default in Settings) and you can revoke it any time.`}
             </AppText>
           )}
         </View>

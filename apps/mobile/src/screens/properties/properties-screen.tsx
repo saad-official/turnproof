@@ -1,3 +1,4 @@
+import { addDaysToKey } from '@turnproof/shared';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
@@ -10,19 +11,25 @@ import { Screen } from '@/components/screen';
 import { StatePill } from '@/components/state-pill';
 import { dateTimeLabel, plural } from '@/constants/format';
 import { icons } from '@/constants/icons';
+import { dayBounds, deviceTimeZone, useToday } from '@/data';
 import { useProperties } from '@/hooks/use-properties';
 import { useSettings } from '@/hooks/use-settings';
-import { useUpcomingTurnovers } from '@/hooks/use-turnovers';
+import { useTurnoverSummaries } from '@/hooks/use-turnovers';
 import { spacing, useTheme } from '@/theme';
 
 /** Properties: name, rooms and the next turnover; add one or join a host's with a code. */
 export function PropertiesScreen() {
   const { colors } = useTheme();
   const properties = useProperties();
-  const upcoming = useUpcomingTurnovers(14);
+  const today = useToday();
+  const tz = deviceTimeZone();
+  // Today (overdue ones included) … 14 days ahead, by time: the first scheduled one is the next.
+  const summaries = useTurnoverSummaries({ from: dayBounds(today, tz).start, to: dayBounds(addDaysToKey(today, 14), tz).start });
   const { role } = useSettings();
-  const next = new Map<string, string>();
-  for (const t of upcoming) if (t.status === 'scheduled' && !next.has(t.propertyId)) next.set(t.propertyId, t.scheduledFor);
+  const nextTurnover = new Map<string, string>();
+  for (const s of summaries) {
+    if (s.turnover.status === 'scheduled' && !nextTurnover.has(s.turnover.propertyId)) nextTurnover.set(s.turnover.propertyId, s.turnover.scheduledFor);
+  }
   const add = () => router.push('/property-editor');
   const join = () => router.push('/join');
 
@@ -49,7 +56,7 @@ export function PropertiesScreen() {
           <>
             <ListGroup>
               {properties.map((p) => {
-                const at = next.get(p.id);
+                const at = nextTurnover.get(p.id);
                 return (
                   <ListRow
                     key={p.id}

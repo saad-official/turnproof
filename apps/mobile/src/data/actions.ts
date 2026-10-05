@@ -32,7 +32,7 @@ import {
   TurnoverSchema,
   turnoverWindow,
 } from '@turnproof/shared';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import type { CaptureResult } from '@/native/capture';
 import { cancelAllTurnoverNotifications } from '@/native/notifications';
@@ -49,13 +49,14 @@ import { getProperty, saveProperty } from './properties-repo';
 import { createProof, revokeProofLink } from './proofs-client';
 import { currentProof } from './proofs-repo';
 import { wipeAllTables } from './reset';
-import { updateSettings as writeSettings } from './settings-repo';
+import { getSettings, updateSettings as writeSettings } from './settings-repo';
 import { db } from './db';
 import { issues, photos, properties, proofs, turnovers } from './schema';
 import { notifyTables } from './store';
 import { pushDirty, scheduleSync } from './sync-client';
 import { deviceTimeZone, nowIso } from './time';
 import { getTurnover, listTurnoversForProperty, saveTurnover } from './turnovers-repo';
+import { cancelUndoWindow, openUndoWindow } from './turnover-purge';
 import { kickUploadQueue, uploadTurnoverPhotos } from './upload-queue';
 
 function afterWrite(opts: { turnoverId?: string; skipNotifications?: boolean } = {}): Promise<void> {
@@ -66,7 +67,11 @@ function afterWrite(opts: { turnoverId?: string; skipNotifications?: boolean } =
 // ---------------------------------------------------------------------------
 // Results
 
-export type ActionFailure = TransitionReason | 'not-found';
+/**
+ * Shared `TransitionReason`s plus `not-found`, `in-progress` (`deleteTurnover` of a running
+ * turnover) and `undo-expired` (`restoreTurnover` after the undo window closed).
+ */
+export type ActionFailure = TransitionReason | 'not-found' | 'in-progress' | 'undo-expired';
 
 export type TurnoverActionResult =
   | { ok: true; turnover: Turnover; events: TurnoverEvent[] }
@@ -262,13 +267,52 @@ export async function rescheduleTurnover(id: string, scheduledFor: string): Prom
   return r;
 }
 
-/** Removes a scheduled turnover (soft delete; a started one must be abandoned instead). */
+/**
+ * Deletes a scheduled, finished or abandoned turnover: soft-deletes it together with its photo and
+ * issue rows (one `deletedAt`, so they sync and restore together). A running turnover is refused
+ * with `in-progress` (abandon it first). For `TURNOVER_UNDO_MS` it can be brought back with
+ * `restoreTurnover`; when that window closes a live proof link is revoked (signed in, best effort)
+ * and the photo files are removed from this phone.
+ */
 export async function deleteTurnover(id: string): Promise<TurnoverActionResult> {
-  const r = applyTransition(id, (t, _p, now) =>
-    t.status !== 'scheduled' ? { ok: false, reason: 'not-scheduled' } : { ok: true, turnover: { ...t, deletedAt: now }, events: [] },
-  );
-  if (r.ok) await afterWrite({ turnoverId: id });
-  return r;
+  const t = getTurnover(id);
+  if (!t || t.deletedAt) return notFound();
+  if (t.status === 'in-progress') return { ok: false, reason: 'in-progress', turnover: t };
+  const now = nowIso();
+  const gone = { deletedAt: now, updatedAt: now };
+  db.transaction((tx) => {
+    tx.update(turnovers).set(gone).where(eq(turnovers.id, id)).run();
+    tx.update(photos).set(gone).where(and(eq(photos.turnoverId, id), isNull(photos.deletedAt))).run();
+    tx.update(issues).set(gone).where(and(eq(issues.turnoverId, id), isNull(issues.deletedAt))).run();
+  });
+  notifyTables('turnovers', 'photos', 'issues');
+  openUndoWindow(id);
+  await afterWrite({ turnoverId: id });
+  return { ok: true, turnover: { ...t, ...gone }, events: [] };
+}
+
+/**
+ * Undo for `deleteTurnover` within its window: brings back the turnover and the photo / issue
+ * rows deleted with it (photos deleted earlier stay deleted). `undo-expired` once the window has
+ * closed; a turnover that is not deleted is returned as is.
+ */
+export async function restoreTurnover(id: string): Promise<TurnoverActionResult> {
+  const t = getTurnover(id);
+  if (!t) return notFound();
+  if (!t.deletedAt) return { ok: true, turnover: t, events: [] };
+  if (!cancelUndoWindow(id)) return { ok: false, reason: 'undo-expired', turnover: t };
+  const deletedAt = t.deletedAt;
+  const now = nowIso();
+  const back = { deletedAt: null, updatedAt: now };
+  db.transaction((tx) => {
+    tx.update(turnovers).set(back).where(eq(turnovers.id, id)).run();
+    tx.update(photos).set(back).where(and(eq(photos.turnoverId, id), eq(photos.deletedAt, deletedAt))).run();
+    tx.update(issues).set(back).where(and(eq(issues.turnoverId, id), eq(issues.deletedAt, deletedAt))).run();
+  });
+  notifyTables('turnovers', 'photos', 'issues');
+  await afterWrite({ turnoverId: id });
+  kickUploadQueue();
+  return { ok: true, turnover: { ...t, ...back }, events: [] };
 }
 
 // ---------------------------------------------------------------------------
@@ -340,6 +384,14 @@ export async function capturePhoto(
   await afterWrite({ turnoverId, skipNotifications: true });
   kickUploadQueue();
   return { ok: true, photo: local, turnover: r.turnover };
+}
+
+/**
+ * Throws away a capture that will not be stored (issue sheet closed, photo replaced, retake before
+ * saving): deletes its file. Safe with null and on a file that is already gone.
+ */
+export function discardCapture(capture: Pick<CaptureResult, 'localUri'> | null | undefined): void {
+  if (capture) deletePhotoFile(capture.localUri);
 }
 
 /** Removes a photo (retake / mistake): detaches it from its room (may reopen it) and deletes the file. */
@@ -487,7 +539,8 @@ export type PublishProofResult =
 /**
  * Publishes the public proof page: uploads the turnover's photos (resized, stamp-hashed), pushes the
  * turnover / photo / issue rows, then POST /api/proofs → `https://getturnproof.vercel.app/p/<slug>`
- * (expires after 60 days, revocable). Reuses a live link unless `{ fresh: true }`.
+ * (expires after `expiresInDays`, default `Settings.proofExpiryDays`; revocable). Reuses a live
+ * link unless `{ fresh: true }`.
  * `onProgress(done, total)` reports photo uploads.
  */
 export async function publishProof(
@@ -513,7 +566,7 @@ export async function publishProof(
   }
   let proof: ProofLink;
   try {
-    proof = await createProof(turnoverId, opts.expiresInDays);
+    proof = await createProof(turnoverId, opts.expiresInDays ?? getSettings().proofExpiryDays);
   } catch (error) {
     return { ok: false, reason: 'server', message: error instanceof Error ? error.message : String(error) };
   }

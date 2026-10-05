@@ -1,6 +1,6 @@
 // Issues / damage reports (photo + note + severity), per turnover. Soft deletes so they sync.
 import type { Issue } from '@turnproof/shared';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
 import { db } from './db';
 import { fromIssue, toIssue } from './mappers';
@@ -21,6 +21,18 @@ export function listIssues(turnoverId: string, roomId?: string): Issue[] {
     .orderBy(asc(issues.createdAt))
     .all()
     .map(toIssue);
+}
+
+/** Live issue count per turnover id (ids without issues are missing from the map). */
+export function issueCountsByTurnover(turnoverIds: readonly string[]): Map<string, number> {
+  if (!turnoverIds.length) return new Map();
+  const rows = db
+    .select({ id: issues.turnoverId, n: sql<number>`count(*)` })
+    .from(issues)
+    .where(and(inArray(issues.turnoverId, [...turnoverIds]), isNull(issues.deletedAt)))
+    .groupBy(issues.turnoverId)
+    .all();
+  return new Map(rows.map((r) => [r.id, Number(r.n)]));
 }
 
 /** Every row including soft-deleted ones (sync). */

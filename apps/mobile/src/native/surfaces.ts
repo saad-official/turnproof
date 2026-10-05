@@ -1,5 +1,6 @@
 // Keeps every system surface in line with the database: scheduled reminders, the "turnover in
 // progress" Live Activity / Live Update, and widgets. Actions call `refreshSurfaces` after each write.
+import { finalizeDeletedTurnovers } from '@/data/turnover-purge';
 import { getTurnover } from '@/data/turnovers-repo';
 import { isDatabaseReady } from '@/data/store';
 import { activeTurnoverView } from '@/data/views';
@@ -47,9 +48,13 @@ export function refreshSurfaces(opts: RefreshOptions = {}): Promise<void> {
   return chain;
 }
 
-/** Launch / daily / foreground maintenance: everything above plus a nudge to the upload queue. */
+/**
+ * Launch / daily / foreground maintenance: everything above, finishing deletions whose undo window
+ * closed while the app was not running, plus a nudge to the upload queue.
+ */
 export async function runMaintenance(): Promise<void> {
   await refreshSurfaces();
+  if (isDatabaseReady()) await finalizeDeletedTurnovers();
   kickUploadQueue();
 }
 

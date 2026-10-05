@@ -1,8 +1,7 @@
-import { proofState } from '@turnproof/shared';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { AppText } from '@/components/app-text';
 import { EmptyState } from '@/components/empty-state';
@@ -11,8 +10,9 @@ import { proofPillKind, StatePill, type PillKind } from '@/components/state-pill
 import { showToast } from '@/components/toast';
 import { dateTimeLabel, formatDuration, monthLabel, plural, shortMonthLabel } from '@/constants/format';
 import { icons } from '@/constants/icons';
-import { dayBounds, deviceTimeZone, listIssues, listProofs, type TurnoverView, useToday } from '@/data';
-import { useTurnoversBetween } from '@/hooks/use-turnovers';
+import { turnoverFailureMessage } from '@/constants/messages';
+import { dayBounds, deleteTurnover, deviceTimeZone, restoreTurnover, type TurnoverSummary, useToday } from '@/data';
+import { useTurnoverSummaries } from '@/hooks/use-turnovers';
 import { shareHistoryCsv } from '@/native/exports';
 import { haptics } from '@/native/haptics';
 import { CHROME_FONT_CAP, hairline, radius, spacing, touchTarget, useTheme } from '@/theme';
@@ -21,7 +21,7 @@ const MONTHS = 12;
 
 type Row =
   | { type: 'header'; key: string; title: string; count: number }
-  | { type: 'turnover'; key: string; turnover: TurnoverView; first: boolean; last: boolean };
+  | { type: 'turnover'; key: string; summary: TurnoverSummary; first: boolean; last: boolean };
 
 function monthKeys(today: string): string[] {
   const [y, m] = today.split('-').map(Number);
@@ -85,16 +85,60 @@ function MonthStrip({ months, value, onChange }: { months: string[]; value: stri
   );
 }
 
-function statusPill(t: TurnoverView, now: string): PillKind {
-  if (t.status === 'in-progress') return 'in-progress';
-  if (t.status === 'abandoned') return 'abandoned';
-  const latest = listProofs(t.id)[0];
-  return proofPillKind(latest ? proofState(latest, now) : null);
+function statusPill(s: TurnoverSummary): PillKind {
+  if (s.turnover.status === 'in-progress') return 'in-progress';
+  if (s.turnover.status === 'abandoned') return 'abandoned';
+  return proofPillKind(s.proofState === 'none' ? null : s.proofState);
 }
 
-function TurnoverRow({ turnover, first, last, now }: { turnover: TurnoverView; first: boolean; last: boolean; now: string }) {
+/**
+ * Deletes a finished / abandoned turnover after a confirmation, with Undo in the toast (the data
+ * layer keeps the photos and any live link until the undo window closes). Running ones are refused.
+ */
+function confirmDelete(s: TurnoverSummary) {
+  const t = s.turnover;
+  if (t.status === 'in-progress') {
+    showToast({ message: turnoverFailureMessage('in-progress') });
+    return;
+  }
+  haptics.warning();
+  const parts = [s.photosCount ? plural(s.photosCount, 'photo') : null, s.issuesCount ? plural(s.issuesCount, 'issue') : null].filter(Boolean);
+  Alert.alert(
+    'Delete this turnover?',
+    `${parts.length ? `Its ${parts.join(' and ')} are removed from this phone. ` : ''}${
+      s.proofState === 'active' ? 'Its proof link stops working. ' : ''
+    }You can undo for a few seconds.`,
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          const r = await deleteTurnover(t.id);
+          if (!r.ok) {
+            haptics.error();
+            showToast({ message: turnoverFailureMessage(r.reason) });
+            return;
+          }
+          showToast({
+            message: 'Turnover deleted',
+            actionLabel: 'Undo',
+            onAction: () => {
+              void restoreTurnover(t.id).then((u) => {
+                if (!u.ok) showToast({ message: turnoverFailureMessage(u.reason) });
+              });
+            },
+          });
+        },
+      },
+    ],
+  );
+}
+
+function TurnoverRow({ summary, first, last }: { summary: TurnoverSummary; first: boolean; last: boolean }) {
   const { colors } = useTheme();
-  const issues = listIssues(turnover.id).length;
+  const turnover = summary.turnover;
+  const issues = summary.issuesCount;
   const when = turnover.startedAt ?? turnover.scheduledFor;
   const p = turnover.progress;
   const parts = [
@@ -102,11 +146,18 @@ function TurnoverRow({ turnover, first, last, now }: { turnover: TurnoverView; f
     p ? `${p.roomsDone}/${p.roomsTotal} rooms` : null,
     issues ? plural(issues, 'issue') : null,
   ].filter(Boolean);
-  const pill = statusPill(turnover, now);
+  const pill = statusPill(summary);
+  const deletable = turnover.status !== 'in-progress';
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${dateTimeLabel(when)}, ${parts.join(', ')}`}
+      accessibilityHint={deletable ? 'Long-press to delete' : undefined}
+      accessibilityActions={deletable ? [{ name: 'delete', label: 'Delete turnover' }] : undefined}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === 'delete') confirmDelete(summary);
+      }}
+      onLongPress={deletable ? () => confirmDelete(summary) : undefined}
       onPress={() =>
         turnover.status === 'in-progress'
           ? router.push({ pathname: '/turnover/[id]', params: { id: turnover.id } })
@@ -140,7 +191,10 @@ function TurnoverRow({ turnover, first, last, now }: { turnover: TurnoverView; f
   );
 }
 
-/** History: a month strip, then that month's turnovers grouped by property (virtualized). */
+/**
+ * History: a month strip, then that month's turnovers grouped by property (virtualized). Rows read
+ * counts and proof state from `useTurnoverSummaries` (local tables only); long-press deletes.
+ */
 export function HistoryScreen() {
   const today = useToday();
   const tz = deviceTimeZone();
@@ -148,19 +202,18 @@ export function HistoryScreen() {
   const [month, setMonth] = useState(months[0]!);
   const from = dayBounds(`${month}-01`, tz).start;
   const to = dayBounds(`${nextMonth(month)}-01`, tz).start;
-  const list = useTurnoversBetween(from, to).filter((t) => t.status !== 'scheduled');
-  const now = new Date().toISOString();
+  const list = useTurnoverSummaries({ from, to }).filter((s) => s.turnover.status !== 'scheduled');
   const [exporting, setExporting] = useState(false);
 
-  const byProperty = new Map<string, TurnoverView[]>();
-  for (const t of [...list].sort((a, b) => Date.parse(b.scheduledFor) - Date.parse(a.scheduledFor))) {
-    const name = t.property?.name ?? 'Deleted property';
-    byProperty.set(name, [...(byProperty.get(name) ?? []), t]);
+  const byProperty = new Map<string, TurnoverSummary[]>();
+  for (const s of [...list].sort((a, b) => Date.parse(b.turnover.scheduledFor) - Date.parse(a.turnover.scheduledFor))) {
+    const name = s.property?.name ?? 'Deleted property';
+    byProperty.set(name, [...(byProperty.get(name) ?? []), s]);
   }
   const rows: Row[] = [];
   for (const [name, items] of [...byProperty.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     rows.push({ type: 'header', key: `h:${name}`, title: name, count: items.length });
-    items.forEach((t, i) => rows.push({ type: 'turnover', key: t.id, turnover: t, first: i === 0, last: i === items.length - 1 }));
+    items.forEach((s, i) => rows.push({ type: 'turnover', key: s.turnover.id, summary: s, first: i === 0, last: i === items.length - 1 }));
   }
 
   const exportCsv = async () => {
@@ -201,7 +254,7 @@ export function HistoryScreen() {
               </AppText>
             </View>
           ) : (
-            <TurnoverRow turnover={item.turnover} first={item.first} last={item.last} now={now} />
+            <TurnoverRow summary={item.summary} first={item.first} last={item.last} />
           )
         }
       />

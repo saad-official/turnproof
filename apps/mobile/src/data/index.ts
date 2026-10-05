@@ -14,6 +14,8 @@ export {
   clearSharedProperties,
   joinProperty,
   type MemberRole,
+  PropertyClientError,
+  type PropertyClientErrorCode,
   type PropertyMemberView,
   refreshSharedProperties,
   removePropertyMember,
@@ -33,6 +35,7 @@ export { pendingPushCount, pullSince, pushDirty, scheduleSync, syncNow, syncStat
 export { getDeviceId, getSyncState, resetSyncCursors, type SyncedTable, type SyncState } from './sync-state-repo';
 export { dayBounds, deviceTimeZone, formatClock, nowIso, todayKey, useClockTick, useSecondTick, useToday } from './time';
 export { getTurnover, listAllTurnovers, listTurnoversBetween, listTurnoversForProperty } from './turnovers-repo';
+export { finalizeDeletedTurnovers, TURNOVER_UNDO_MS } from './turnover-purge';
 export {
   kickUploadQueue,
   retryFailedUploads,
@@ -42,4 +45,14 @@ export {
   uploadQueueStore,
   uploadTurnoverPhotos,
 } from './upload-queue';
-export { activeTurnoverView, toTurnoverView, turnoverView, turnoverViewsBetween, type TurnoverView, upcomingTurnoverViews } from './views';
+export {
+  activeTurnoverView,
+  toTurnoverView,
+  type TurnoverRange,
+  type TurnoverSummary,
+  turnoverSummariesBetween,
+  turnoverView,
+  turnoverViewsBetween,
+  type TurnoverView,
+  upcomingTurnoverViews,
+} from './views';

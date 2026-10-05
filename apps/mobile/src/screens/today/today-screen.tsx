@@ -1,4 +1,4 @@
-import { dayKeyOf } from '@turnproof/shared';
+import { dayKeyOf, groupByDay } from '@turnproof/shared';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -20,15 +20,6 @@ import { spacing } from '@/theme';
 
 import { startAndOpen } from '../turnover/turnover-actions';
 import { ActiveTurnoverCard } from './active-turnover-card';
-
-function groupViews(list: TurnoverView[], tz: string): { dayKey: string; items: TurnoverView[] }[] {
-  const groups = new Map<string, TurnoverView[]>();
-  for (const t of list) {
-    const key = dayKeyOf(t.scheduledFor, tz);
-    groups.set(key, [...(groups.get(key) ?? []), t]);
-  }
-  return [...groups.entries()].map(([dayKey, items]) => ({ dayKey, items }));
-}
 
 function UpcomingRow({ turnover, today }: { turnover: TurnoverView; today: string }) {
   const [starting, setStarting] = useState(false);
@@ -89,7 +80,7 @@ export function TodayScreen() {
   const today = useToday();
   const tz = deviceTimeZone();
   const list = upcoming.filter((t) => t.id !== active?.id);
-  const groups = groupViews(list, tz);
+  const groups = groupByDay(list, tz);
   const schedule = () => router.push('/schedule');
 
   return (
@@ -121,9 +112,9 @@ export function TodayScreen() {
           <>
             {groups.map((g) => (
               <View key={g.dayKey} style={{ gap: spacing.sm }}>
-                <SectionHeader title={dayLabel(g.dayKey, today)} detail={plural(g.items.length, 'turnover')} />
+                <SectionHeader title={dayLabel(g.dayKey, today)} detail={plural(g.turnovers.length, 'turnover')} />
                 <ListGroup>
-                  {g.items.map((t) => (
+                  {g.turnovers.map((t) => (
                     <UpcomingRow key={t.id} turnover={t} today={today} />
                   ))}
                 </ListGroup>

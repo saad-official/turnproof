@@ -81,6 +81,28 @@ export function setAppValue(key: string, value: unknown): void {
   write([[appKey(key), value]]);
 }
 
+/**
+ * One-time move of the old device-local UI preferences (`app.ui.appearance`,
+ * `app.ui.proofExpiryDays`) into the typed `Settings` keys. Invalid values are dropped; an
+ * existing typed value wins. Runs right after migrations.
+ */
+export function migrateLegacyUiPreferences(): void {
+  const legacy: [string, keyof Settings][] = [
+    ['ui.appearance', 'appearance'],
+    ['ui.proofExpiryDays', 'proofExpiryDays'],
+  ];
+  const stored = readAll();
+  const entries: [string, unknown][] = [];
+  for (const [oldKey, key] of legacy) {
+    if (!stored.has(appKey(oldKey))) continue;
+    entries.push([appKey(oldKey), undefined]);
+    if (stored.has(key)) continue;
+    const parsed = SettingsSchema.safeParse({ [key]: stored.get(appKey(oldKey)) });
+    if (parsed.success) entries.push([key, parsed.data[key]]);
+  }
+  if (entries.length) write(entries);
+}
+
 /** Removes every app-local value (sign-out / delete all data). */
 export function clearAppValues(): void {
   db.delete(settings).where(like(settings.key, 'app.%')).run();

@@ -11,6 +11,35 @@ import { createStore } from './store';
 import { syncNow } from './sync-client';
 import { nowIso } from './time';
 
+export type PropertyClientErrorCode = 'invite_not_found' | 'already_member' | 'offline' | 'unauthorized' | 'server';
+
+/**
+ * What `joinProperty` / `shareProperty` reject with: `offline` (no connection / timeout),
+ * `unauthorized` (signed out or session expired), `invite_not_found` (404 on join),
+ * `already_member` (409 on join), anything else `server` (`message` is the server's text).
+ */
+export class PropertyClientError extends Error {
+  constructor(
+    readonly code: PropertyClientErrorCode,
+    message: string,
+    readonly status?: number,
+  ) {
+    super(message);
+    this.name = 'PropertyClientError';
+  }
+}
+
+function toPropertyClientError(error: unknown, op: 'join' | 'share'): PropertyClientError {
+  if (error instanceof PropertyClientError) return error;
+  if (!(error instanceof ApiError)) return new PropertyClientError('server', error instanceof Error ? error.message : String(error));
+  const { status, code, message } = error;
+  if (status === 0 && code !== 'aborted') return new PropertyClientError('offline', message, status);
+  if (status === 401) return new PropertyClientError('unauthorized', message, status);
+  if (code === 'invite_not_found' || (op === 'join' && status === 404)) return new PropertyClientError('invite_not_found', message, status);
+  if (code === 'already_member' || (op === 'join' && status === 409)) return new PropertyClientError('already_member', message, status);
+  return new PropertyClientError('server', message, status);
+}
+
 export type MemberRole = 'host' | 'cleaner';
 
 export type PropertyMemberView = {
@@ -98,13 +127,18 @@ export async function refreshSharedProperties(): Promise<SharedPropertyView[]> {
 /**
  * Host: share a local property. Pushes it first (the server must know the row), then
  * POST /api/properties/:id/share → invite code (stored on the property). Idempotent.
+ * Rejects with `PropertyClientError` (`offline` | `unauthorized` | `server`).
  */
 export async function shareProperty(propertyId: string): Promise<SharedPropertyView> {
   await syncNow();
-  const { property } = await apiFetch<{ property: SharedPropertyView }>(
-    `/api/properties/${encodeURIComponent(propertyId)}/share`,
-    { method: 'POST' },
-  );
+  let property: SharedPropertyView;
+  try {
+    ({ property } = await apiFetch<{ property: SharedPropertyView }>(`/api/properties/${encodeURIComponent(propertyId)}/share`, {
+      method: 'POST',
+    }));
+  } catch (error) {
+    throw toPropertyClientError(error, 'share');
+  }
   if (property.inviteCode) rememberInviteCode(propertyId, property.inviteCode);
   await refreshSharedProperties().catch(() => undefined);
   return property;
@@ -112,14 +146,20 @@ export async function shareProperty(propertyId: string): Promise<SharedPropertyV
 
 /**
  * Cleaner: join with an invite code (POST /api/properties/join), then pull so the property and its
- * schedule land locally. Errors: 404 `invite_not_found`, 409 `already_member`.
+ * schedule land locally. Rejects with `PropertyClientError` (`invite_not_found` | `already_member` |
+ * `offline` | `unauthorized` | `server`).
  */
 export async function joinProperty(code: string): Promise<{ propertyId: string; property: Property | null }> {
   const normalized = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const { property } = await apiFetch<{ property: SharedPropertyView }>('/api/properties/join', {
-    method: 'POST',
-    body: { code: normalized },
-  });
+  let property: SharedPropertyView;
+  try {
+    ({ property } = await apiFetch<{ property: SharedPropertyView }>('/api/properties/join', {
+      method: 'POST',
+      body: { code: normalized },
+    }));
+  } catch (error) {
+    throw toPropertyClientError(error, 'join');
+  }
   await syncNow();
   await refreshSharedProperties().catch(() => undefined);
   return { propertyId: property.propertyId, property: getProperty(property.propertyId) };

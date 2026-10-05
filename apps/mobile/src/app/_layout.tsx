@@ -12,7 +12,6 @@ import { PrimaryButton } from '@/components/primary-button';
 import { showToast, ToastHost } from '@/components/toast';
 import { icons } from '@/constants/icons';
 import { ensureDatabaseReady, useDatabaseMigrations } from '@/data';
-import { hydrateAppPreferences, useAppPreferencesHydrated } from '@/hooks/use-app-preferences';
 import { useSettings } from '@/hooks/use-settings';
 import { useDetailStackOptions } from '@/hooks/use-stack-options';
 import { haptics } from '@/native/haptics';
@@ -40,13 +39,7 @@ function hrefFromUrl(url: string): Href | null {
 
 export default function RootLayout() {
   const db = useDatabaseMigrations();
-  const prefsReady = useAppPreferencesHydrated();
-
-  useEffect(() => {
-    if (db.success) hydrateAppPreferences();
-  }, [db.success]);
-
-  const ready = (db.success && prefsReady) || !!db.error;
+  const ready = db.success || !!db.error;
   useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => undefined);
   }, [ready]);
@@ -58,7 +51,7 @@ export default function RootLayout() {
       </AppThemeProvider>
     );
   }
-  if (!db.success || !prefsReady) return null; // the splash screen stays up
+  if (!db.success) return null; // the splash screen stays up
   return (
     <AppThemeProvider>
       <App />

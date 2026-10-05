@@ -14,12 +14,11 @@ import { SeverityPicker } from '@/components/severity-picker';
 import { showToast } from '@/components/toast';
 import { icons } from '@/constants/icons';
 import { captureErrorMessage, turnoverFailureMessage } from '@/constants/messages';
-import { addIssue } from '@/data';
+import { addIssue, discardCapture } from '@/data';
 import { useSettings } from '@/hooks/use-settings';
 import { useTurnover } from '@/hooks/use-turnovers';
 import { CaptureError, takeProofPhoto, type CaptureResult } from '@/native/capture';
 import { haptics } from '@/native/haptics';
-import { deletePhotoFile } from '@/native/photo-files';
 import { radius, shutterSize, spacing, useTheme } from '@/theme';
 
 const WHOLE = '__whole__';
@@ -164,13 +163,13 @@ export function IssueSheet() {
   // A photo taken but never reported is deleted when the sheet closes.
   useEffect(
     () => () => {
-      if (!submitted.current && pending.current) deletePhotoFile(pending.current.localUri);
+      if (!submitted.current) discardCapture(pending.current);
     },
     [],
   );
 
   const setPhoto = (next: CaptureResult | null) => {
-    if (pending.current && pending.current.id !== next?.id) deletePhotoFile(pending.current.localUri);
+    if (pending.current && pending.current.id !== next?.id) discardCapture(pending.current);
     pending.current = next;
     setShot(next);
     if (next) setError(null);

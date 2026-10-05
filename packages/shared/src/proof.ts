@@ -38,6 +38,23 @@ export function proofState(proof: Pick<Proof, "expiresAt" | "revokedAt">, now: I
   return Date.parse(now) >= Date.parse(proof.expiresAt) ? "expired" : "active";
 }
 
+/** A turnover's proof status for lists: `none` when it never had a link. */
+export type ProofSummaryState = ProofState | "none";
+
+/**
+ * One state for a turnover's links (any order): `active` while any link is still live, otherwise
+ * the newest link's state (`expired` / `revoked`), `none` without links.
+ */
+export function latestProofState(
+  proofs: readonly Pick<Proof, "publishedAt" | "expiresAt" | "revokedAt">[],
+  now: IsoString,
+): ProofSummaryState {
+  if (proofs.length === 0) return "none";
+  if (proofs.some((p) => proofState(p, now) === "active")) return "active";
+  const newest = proofs.reduce((a, b) => (Date.parse(b.publishedAt) > Date.parse(a.publishedAt) ? b : a));
+  return proofState(newest, now);
+}
+
 /** Public page URL for a slug. */
 export function proofUrl(slug: string, origin = PROOF_BASE_URL): string {
   return `${origin.replace(/\/+$/, "")}/p/${slug}`;

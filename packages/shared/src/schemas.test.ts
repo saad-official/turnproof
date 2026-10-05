@@ -175,7 +175,26 @@ describe("ProofSchema", () => {
 
 describe("SettingsSchema", () => {
   it("has the documented defaults", () => {
-    expect(DEFAULT_SETTINGS).toEqual({ onboarded: false, role: "cleaner", reminderLeadMinutes: 60, stampGps: true });
+    expect(DEFAULT_SETTINGS).toEqual({
+      onboarded: false,
+      role: "cleaner",
+      reminderLeadMinutes: 60,
+      stampGps: true,
+      appearance: "system",
+      proofExpiryDays: 60,
+    });
+  });
+  it("accepts only system, light or dark appearance", () => {
+    expect(SettingsSchema.parse({ appearance: "dark" }).appearance).toBe("dark");
+    expect(SettingsSchema.parse({ appearance: "light" }).appearance).toBe("light");
+    expect(SettingsSchema.safeParse({ appearance: "sepia" }).success).toBe(false);
+  });
+  it("bounds the proof expiry to 1–365 whole days", () => {
+    expect(SettingsSchema.parse({ proofExpiryDays: 1 }).proofExpiryDays).toBe(1);
+    expect(SettingsSchema.parse({ proofExpiryDays: 365 }).proofExpiryDays).toBe(365);
+    expect(SettingsSchema.safeParse({ proofExpiryDays: 0 }).success).toBe(false);
+    expect(SettingsSchema.safeParse({ proofExpiryDays: 366 }).success).toBe(false);
+    expect(SettingsSchema.safeParse({ proofExpiryDays: 7.5 }).success).toBe(false);
   });
   it("bounds the reminder lead time", () => {
     expect(SettingsSchema.safeParse({ reminderLeadMinutes: -5 }).success).toBe(false);

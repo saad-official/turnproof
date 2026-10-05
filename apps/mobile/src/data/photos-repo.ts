@@ -32,6 +32,18 @@ export function listPhotos(turnoverId: string, roomId?: string | null): LocalPho
     .map(toPhoto);
 }
 
+/** Live photo count per turnover id (ids without photos are missing from the map). */
+export function photoCountsByTurnover(turnoverIds: readonly string[]): Map<string, number> {
+  if (!turnoverIds.length) return new Map();
+  const rows = db
+    .select({ id: photos.turnoverId, n: sql<number>`count(*)` })
+    .from(photos)
+    .where(and(inArray(photos.turnoverId, [...turnoverIds]), isNull(photos.deletedAt)))
+    .groupBy(photos.turnoverId)
+    .all();
+  return new Map(rows.map((r) => [r.id, Number(r.n)]));
+}
+
 /** Every row including soft-deleted ones (sync). */
 export function allPhotoRows(): LocalPhoto[] {
   return db.select().from(photos).all().map(toPhoto);

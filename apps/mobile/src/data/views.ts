@@ -2,6 +2,8 @@
 // `turnoverProgress`), elapsed time, countdown and overdue flag. Pure reads; hooks wrap them.
 import {
   countdownLabel,
+  latestProofState,
+  type ProofSummaryState,
   elapsedSeconds,
   isOverdue,
   type Property,
@@ -14,7 +16,10 @@ import {
   upcomingTurnovers,
 } from '@turnproof/shared';
 
+import { issueCountsByTurnover } from './issues-repo';
 import { getActiveTurnover } from './local-runs';
+import { photoCountsByTurnover } from './photos-repo';
+import { listProofsByTurnover } from './proofs-repo';
 import { getProperties, getProperty } from './properties-repo';
 import { dayBounds, deviceTimeZone, todayKey } from './time';
 import { getTurnover, listTurnoversBetween, listTurnoversByStatus } from './turnovers-repo';
@@ -88,6 +93,46 @@ export function upcomingTurnoverViews(days = 7, now: string = new Date().toISOSt
 /** Turnovers scheduled in `[from, to)` (history by month, calendar), as views. */
 export function turnoverViewsBetween(from: string, to: string, propertyId?: string, now: string = new Date().toISOString()): TurnoverView[] {
   return withProperties(listTurnoversBetween(from, to, propertyId), now);
+}
+
+/** A list row for History / Properties: one turnover with counts and its proof-link state. */
+export type TurnoverSummary = {
+  turnover: TurnoverView;
+  /** Same as `turnover.property` (null when the property row is missing). */
+  property: Property | null;
+  /** Live (not deleted) photos of every phase. */
+  photosCount: number;
+  /** Live issues. */
+  issuesCount: number;
+  /** Shared `latestProofState` over the cached `proofs` rows: `none` when never published. */
+  proofState: ProofSummaryState;
+};
+
+/** Half-open ISO range `[from, to)` on `scheduledFor`. */
+export type TurnoverRange = { from: string; to: string };
+
+/**
+ * Turnovers scheduled in `range` (optionally one property's) with photo / issue counts and proof
+ * state, by scheduled time. Local tables only (the `proofs` cache, no network): three grouped
+ * queries for the whole list, so rows never query while rendering.
+ */
+export function turnoverSummariesBetween(
+  range: TurnoverRange,
+  propertyId?: string,
+  now: string = new Date().toISOString(),
+): TurnoverSummary[] {
+  const views = turnoverViewsBetween(range.from, range.to, propertyId, now);
+  const ids = views.map((v) => v.id);
+  const photosBy = photoCountsByTurnover(ids);
+  const issuesBy = issueCountsByTurnover(ids);
+  const proofsBy = listProofsByTurnover(ids);
+  return views.map((turnover) => ({
+    turnover,
+    property: turnover.property,
+    photosCount: photosBy.get(turnover.id) ?? 0,
+    issuesCount: issuesBy.get(turnover.id) ?? 0,
+    proofState: latestProofState(proofsBy.get(turnover.id) ?? [], now),
+  }));
 }
 
 /** The turnover running on this device, as a view. */

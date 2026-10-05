@@ -13,7 +13,7 @@ import { SectionHeader } from '@/components/section-header';
 import { showToast } from '@/components/toast';
 import { dateLabel, plural } from '@/constants/format';
 import { icons, roomIcons } from '@/constants/icons';
-import { deleteTurnover, type TurnoverView } from '@/data';
+import { deleteTurnover, restoreTurnover, type TurnoverView } from '@/data';
 import { haptics } from '@/native/haptics';
 import { hairline, spacing, useTheme } from '@/theme';
 
@@ -37,7 +37,7 @@ export function StartView({ turnover }: { turnover: TurnoverView }) {
         onPress: async () => {
           const r = await deleteTurnover(turnover.id);
           if (r.ok) {
-            showToast({ message: 'Turnover deleted' });
+            showToast({ message: 'Turnover deleted', actionLabel: 'Undo', onAction: () => void restoreTurnover(turnover.id) });
             if (router.canGoBack()) router.back();
             else router.replace('/today');
           }

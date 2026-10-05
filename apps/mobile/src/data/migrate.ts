@@ -7,6 +7,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 
 import migrations from '../../drizzle/migrations';
 import { db } from './db';
+import { migrateLegacyUiPreferences } from './settings-repo';
 import { createStore, markDatabaseReady } from './store';
 
 export type DatabaseReadyState = { success: boolean; error?: Error };
@@ -19,6 +20,11 @@ export function ensureDatabaseReady(): Promise<void> {
   if (!pending) {
     pending = migrate(db, migrations)
       .then(() => {
+        try {
+          migrateLegacyUiPreferences();
+        } catch (error) {
+          console.warn('[migrate] legacy preferences', error);
+        }
         markDatabaseReady();
         readyState.setState({ success: true });
       })

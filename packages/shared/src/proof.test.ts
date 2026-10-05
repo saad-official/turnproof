@@ -1,5 +1,14 @@
 import { uid } from "./fixtures.test-util";
-import { DEFAULT_PROOF_DAYS, isProofSlug, newProofSlug, PROOF_SLUG_ALPHABET, proofExpiry, proofState, proofUrl } from "./proof";
+import {
+  DEFAULT_PROOF_DAYS,
+  isProofSlug,
+  latestProofState,
+  newProofSlug,
+  PROOF_SLUG_ALPHABET,
+  proofExpiry,
+  proofState,
+  proofUrl,
+} from "./proof";
 import { ProofSchema } from "./schemas";
 
 describe("PROOF_SLUG_ALPHABET", () => {
@@ -73,6 +82,25 @@ describe("proofState", () => {
   it("is revoked once revoked, even before expiry", () => {
     expect(proofState({ ...proof, revokedAt: "2026-10-07T00:00:00.000Z" }, "2026-10-08T00:00:00.000Z")).toBe("revoked");
     expect(proofState({ ...proof, revokedAt: "2026-10-07T00:00:00.000Z" }, "2027-01-01T00:00:00.000Z")).toBe("revoked");
+  });
+});
+
+describe("latestProofState", () => {
+  const NOW = "2026-10-10T00:00:00.000Z";
+  const link = (publishedAt: string, expiresAt: string, revokedAt: string | null = null) => ({ publishedAt, expiresAt, revokedAt });
+  it("is none without links", () => {
+    expect(latestProofState([], NOW)).toBe("none");
+  });
+  it("is the newest link's state", () => {
+    const revokedNewest = link("2026-10-09T00:00:00.000Z", "2026-12-08T00:00:00.000Z", "2026-10-09T01:00:00.000Z");
+    const expiredOlder = link("2026-08-01T00:00:00.000Z", "2026-08-08T00:00:00.000Z");
+    expect(latestProofState([expiredOlder, revokedNewest], NOW)).toBe("revoked");
+    expect(latestProofState([expiredOlder], NOW)).toBe("expired");
+  });
+  it("is active while any link is still live, even when a newer one was revoked", () => {
+    const live = link("2026-10-01T00:00:00.000Z", "2026-11-30T00:00:00.000Z");
+    const revokedNewer = link("2026-10-09T00:00:00.000Z", "2026-12-08T00:00:00.000Z", "2026-10-09T01:00:00.000Z");
+    expect(latestProofState([revokedNewer, live], NOW)).toBe("active");
   });
 });
 

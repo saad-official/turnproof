@@ -54,7 +54,7 @@ export function isOverdue(turnover: Turnover, now: IsoString): boolean {
   return turnover.status === "scheduled" && !turnover.deletedAt && Date.parse(now) > Date.parse(turnover.scheduledFor);
 }
 
-const byScheduled = (a: Turnover, b: Turnover) => Date.parse(a.scheduledFor) - Date.parse(b.scheduledFor);
+const byScheduled = (a: { scheduledFor: IsoString }, b: { scheduledFor: IsoString }) => Date.parse(a.scheduledFor) - Date.parse(b.scheduledFor);
 
 /**
  * What's coming up: scheduled turnovers whose local day is today … today + days − 1 (earlier-today
@@ -74,14 +74,17 @@ export function upcomingTurnovers(turnovers: readonly Turnover[], now: IsoString
     .sort(byScheduled);
 }
 
-export interface DayGroup {
+export interface DayGroup<T extends { scheduledFor: IsoString } = Turnover> {
   dayKey: DayKey;
-  turnovers: Turnover[];
+  turnovers: T[];
 }
 
-/** Turnovers grouped by local day of `scheduledFor`, days and rows in time order. */
-export function groupByDay(turnovers: readonly Turnover[], tz: string): DayGroup[] {
-  const groups = new Map<DayKey, Turnover[]>();
+/**
+ * Items grouped by local day of `scheduledFor`, days and rows in time order. Works for turnovers
+ * and for any view that carries a `scheduledFor` (the items are returned as given).
+ */
+export function groupByDay<T extends { scheduledFor: IsoString }>(turnovers: readonly T[], tz: string): DayGroup<T>[] {
+  const groups = new Map<DayKey, T[]>();
   for (const t of [...turnovers].sort(byScheduled)) {
     const key = dayKeyOf(t.scheduledFor, tz);
     const list = groups.get(key) ?? [];

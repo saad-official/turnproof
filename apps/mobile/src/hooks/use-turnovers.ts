@@ -1,8 +1,19 @@
 import { secondTick, clockTick } from '@/data/time';
 import { useLiveQuery, useStore } from '@/data/store';
-import { activeTurnoverView, type TurnoverView, turnoverView, turnoverViewsBetween, upcomingTurnoverViews } from '@/data/views';
+import {
+  activeTurnoverView,
+  type TurnoverRange,
+  type TurnoverSummary,
+  turnoverSummariesBetween,
+  type TurnoverView,
+  turnoverView,
+  turnoverViewsBetween,
+  upcomingTurnoverViews,
+} from '@/data/views';
 
 const EMPTY: TurnoverView[] = [];
+const EMPTY_SUMMARIES: TurnoverSummary[] = [];
+const SUMMARY_TABLES = ['turnovers', 'properties', 'settings', 'photos', 'issues', 'proofs'] as const;
 const TURNOVER_TABLES = ['turnovers', 'properties', 'settings'] as const;
 
 type TickOptions = {
@@ -53,6 +64,23 @@ export function useTurnoversBetween(from: string, to: string, propertyId?: strin
     TURNOVER_TABLES,
     () => turnoverViewsBetween(from, to, propertyId ?? undefined, new Date(tick).toISOString()),
     EMPTY,
+    String(tick),
+  );
+}
+
+/**
+ * List rows for `[range.from, range.to)` (optionally one property's): each
+ * `{ turnover, property, photosCount, issuesCount, proofState }`, by scheduled time. Reads local
+ * tables only (proof links from the `proofs` cache, no network); re-runs when any of them changes
+ * and on the 30 s tick (proof expiry, countdowns).
+ */
+export function useTurnoverSummaries(range: TurnoverRange, propertyId?: string | null): TurnoverSummary[] {
+  const tick = useTick(undefined);
+  return useLiveQuery(
+    `summaries:${range.from}:${range.to}:${propertyId ?? ''}`,
+    SUMMARY_TABLES,
+    () => turnoverSummariesBetween(range, propertyId ?? undefined, new Date(tick).toISOString()),
+    EMPTY_SUMMARIES,
     String(tick),
   );
 }

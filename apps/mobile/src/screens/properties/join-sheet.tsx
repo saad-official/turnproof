@@ -9,19 +9,10 @@ import { ListGroup, ListRow } from '@/components/list-row';
 import { PrimaryButton } from '@/components/primary-button';
 import { showToast } from '@/components/toast';
 import { icons } from '@/constants/icons';
-import { ApiError, joinProperty } from '@/data';
+import { propertyErrorMessage } from '@/constants/messages';
+import { joinProperty } from '@/data';
 import { useSession } from '@/hooks/use-session';
 import { haptics } from '@/native/haptics';
-
-function joinError(e: unknown): string {
-  if (e instanceof ApiError) {
-    if (e.status === 0) return "You're offline. Try again when you're connected.";
-    if (e.code === 'invite_not_found' || e.status === 404) return 'No property uses that code. Check it with your host.';
-    if (e.code === 'already_member' || e.status === 409) return 'You already have this property.';
-    return e.message || 'Could not join.';
-  }
-  return e instanceof Error ? e.message : 'Could not join.';
-}
 
 /** `join`: a cleaner enters the host's invite code; the property and its schedule sync down. */
 export function JoinSheet() {
@@ -45,7 +36,7 @@ export function JoinSheet() {
       router.back();
     } catch (e) {
       haptics.error();
-      setError(joinError(e));
+      setError(propertyErrorMessage(e, 'Could not join.'));
     } finally {
       setBusy(false);
     }
