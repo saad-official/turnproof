@@ -1,26 +1,178 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Design tokens come from packages/shared/src/tokens.ts: the root layout
+ * renders them as --tp-* custom properties (lib/tokens-css.ts), switched by
+ * the .dark class (next-themes), the system preference, or data-scheme on
+ * one element. Utilities below map Tailwind names onto those variables, so
+ * there are no colour or size literals in the components.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--tp-color-surface);
+  --color-elevated: var(--tp-color-surface-elevated);
+  --color-sunken: var(--tp-color-surface-sunken);
+  --color-ink: var(--tp-color-text);
+  --color-ink-2: var(--tp-color-text-secondary);
+  --color-ink-3: var(--tp-color-text-tertiary);
+  --color-accent: var(--tp-color-accent);
+  --color-accent-pressed: var(--tp-color-accent-pressed);
+  --color-accent-soft: var(--tp-color-accent-soft);
+  --color-accent-ink: var(--tp-color-accent-text);
+  --color-on-accent: var(--tp-color-on-accent);
+  --color-issue: var(--tp-color-issue);
+  --color-issue-soft: var(--tp-color-issue-soft);
+  --color-issue-ink: var(--tp-color-issue-text);
+  --color-on-issue: var(--tp-color-on-issue);
+  --color-verified: var(--tp-color-verified);
+  --color-verified-soft: var(--tp-color-verified-soft);
+  --color-verified-ink: var(--tp-color-verified-text);
+  --color-on-verified: var(--tp-color-on-verified);
+  --color-warning: var(--tp-color-warning);
+  --color-warning-soft: var(--tp-color-warning-soft);
+  --color-line: var(--tp-color-separator);
+  --color-edge: var(--tp-color-border);
+
+  --font-sans: var(--font-humanist), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: var(--tp-radius-sm);
+  --radius-md: var(--tp-radius-md);
+  --radius-lg: var(--tp-radius-lg);
+
+  --text-display: var(--tp-font-size-display);
+  --text-display--line-height: var(--tp-line-height-display);
+  --text-display--letter-spacing: var(--tp-letter-spacing-display);
+  --text-title: var(--tp-font-size-title);
+  --text-title--line-height: var(--tp-line-height-title);
+  --text-title--letter-spacing: var(--tp-letter-spacing-title);
+  --text-headline: var(--tp-font-size-headline);
+  --text-headline--line-height: var(--tp-line-height-headline);
+  --text-body: var(--tp-font-size-body);
+  --text-body--line-height: var(--tp-line-height-body);
+  --text-callout: var(--tp-font-size-callout);
+  --text-callout--line-height: var(--tp-line-height-callout);
+  --text-caption: var(--tp-font-size-caption);
+  --text-caption--line-height: var(--tp-line-height-caption);
+
+  --shadow-sm: var(--tp-shadow-sm);
+  --shadow-md: var(--tp-shadow-md);
+  --shadow-lg: var(--tp-shadow-lg);
+
+  --ease-standard: var(--tp-ease-standard);
+  --default-transition-duration: var(--tp-duration-fast);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    background: var(--tp-color-surface);
+    color: var(--tp-color-text);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: var(--tp-font-size-body);
+    line-height: var(--tp-line-height-body);
+    background: var(--tp-color-surface);
+    color: var(--tp-color-text);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--tp-color-accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--tp-color-accent-soft);
+    color: var(--tp-color-text);
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+  }
+
+  /* Times, counts and stamps never jump width. */
+  time,
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Long-form pages (privacy, terms, support). */
+  .prose-doc {
+    max-width: 68ch;
+  }
+  .prose-doc h2 {
+    font-size: var(--tp-font-size-headline);
+    line-height: var(--tp-line-height-headline);
+    font-weight: 600;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .prose-doc h3 {
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+  .prose-doc p,
+  .prose-doc ul {
+    margin-bottom: 1rem;
+    color: var(--tp-color-text-secondary);
+  }
+  .prose-doc strong {
+    color: var(--tp-color-text);
+    font-weight: 600;
+  }
+  .prose-doc ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+  }
+  .prose-doc li + li {
+    margin-top: 0.375rem;
+  }
+  .prose-doc a {
+    color: var(--tp-color-accent-text);
+    text-decoration: underline;
+  }
+
+  /* A faint woven texture for linen panels. Purely decorative. */
+  .linen {
+    background-color: var(--tp-color-surface-sunken);
+    background-image:
+      repeating-linear-gradient(0deg, color-mix(in oklab, var(--tp-color-text) 3%, transparent) 0 1px, transparent 1px 4px),
+      repeating-linear-gradient(90deg, color-mix(in oklab, var(--tp-color-text) 3%, transparent) 0 1px, transparent 1px 4px);
+  }
+
+  /* Proof photo lightbox (native <dialog>, opened with invoker commands). */
+  .lightbox {
+    max-width: min(96vw, 1100px);
+    max-height: 94dvh;
+    padding: 0;
+    border: 0;
+    border-radius: var(--tp-radius-lg);
+    background: var(--tp-color-surface-elevated);
+    color: var(--tp-color-text);
+    box-shadow: var(--tp-shadow-lg);
+  }
+  .lightbox::backdrop {
+    background: color-mix(in oklab, #000 72%, transparent);
+  }
+  .lightbox img {
+    max-height: calc(94dvh - 5.5rem);
+    width: auto;
+    object-fit: contain;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -29,4 +29,4 @@ jobs:
       - run: pnpm test
       - run: pnpm build:web
         env:
-          NEXT_PUBLIC_APP_URL: http://localhost:3700
+          NEXT_PUBLIC_APP_URL: http://localhost:3900
