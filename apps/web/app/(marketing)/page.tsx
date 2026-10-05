@@ -4,11 +4,12 @@ import { BadgeCheck, Camera, Clock3, LayoutGrid, Link2, Lock, ShieldCheck, Timer
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ChecklistScreen, LiveActivityStrip, OfflineMock, PhoneFrame, StampMock, WidgetMock } from "@/components/marketing/device-mocks";
+import { ProductVideo } from "@/components/marketing/product-video";
 import { FAQ, STEPS } from "@/lib/marketing/content";
 
-/** The hero shows the product video only when the file ships with the build; otherwise the CSS mock. */
-const HERO_VIDEO = "/video/turnproof.mp4";
-const hasHeroVideo = existsSync(path.join(process.cwd(), "public", HERO_VIDEO));
+/** The product preview section renders only when the video ships with the build. */
+const PRODUCT_VIDEO = "/video/turnproof.mp4";
+const hasProductVideo = existsSync(path.join(process.cwd(), "public", PRODUCT_VIDEO));
 
 function Section({ id, eyebrow, title, intro, children }: { id: string; eyebrow?: string; title: string; intro?: ReactNode; children: ReactNode }) {
   return (
@@ -64,31 +65,24 @@ function Hero() {
             verified captures, three of five checklist items ticked, and Issue and Next room buttons. Below it, the Lock
             Screen Live Activity reads “Maple St · Bathroom 3/6 · 42 min”.
           </figcaption>
-          {hasHeroVideo ? (
-            <video
-              className="w-[310px] rounded-[40px] shadow-lg"
-              src={HERO_VIDEO}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              aria-hidden
-            />
-          ) : (
-            <>
-              <div aria-hidden className="lg:mr-10">
-                <PhoneFrame>
-                  <ChecklistScreen />
-                </PhoneFrame>
-              </div>
-              <div aria-hidden className="relative -mt-16 w-full max-w-[330px] lg:absolute lg:bottom-6 lg:left-0 lg:mt-0">
-                <LiveActivityStrip />
-              </div>
-            </>
-          )}
+          <div aria-hidden className="lg:mr-10">
+            <PhoneFrame>
+              <ChecklistScreen />
+            </PhoneFrame>
+          </div>
+          <div aria-hidden className="relative -mt-16 w-full max-w-[330px] lg:absolute lg:bottom-6 lg:left-0 lg:mt-0">
+            <LiveActivityStrip />
+          </div>
         </figure>
       </div>
+    </section>
+  );
+}
+
+function Preview() {
+  return (
+    <section aria-label="Product preview" className="mx-auto max-w-6xl px-4 pt-16 sm:px-8">
+      <ProductVideo />
     </section>
   );
 }
@@ -320,6 +314,7 @@ export default function HomePage() {
   return (
     <>
       <Hero />
+      {hasProductVideo ? <Preview /> : null}
       <HowItWorks />
       <NativeFeatures />
       <ProofLink />
