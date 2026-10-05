@@ -4,12 +4,19 @@
     "slug": "turnproof",
     "version": "0.1.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/icons/icon.png",
     "scheme": "turnproof",
     "userInterfaceStyle": "automatic",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "bundleIdentifier": "com.saadofficial.turnproof",
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/icons/icon.png",
       "supportsTablet": false,
       "infoPlist": {
         "NSSupportsLiveActivities": true,
@@ -18,16 +25,17 @@
           "fetch",
           "remote-notification",
           "processing"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.saadofficial.turnproof",
       "adaptiveIcon": {
-        "backgroundColor": "#121417",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#FAF8F4",
+        "foregroundImage": "./assets/icons/icon-foreground.png",
+        "backgroundImage": "./assets/icons/icon-background.png",
+        "monochromeImage": "./assets/icons/icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -36,6 +44,12 @@
         "android.permission.SCHEDULE_EXACT_ALARM",
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_MEDIA_VIDEO"
       ]
     },
     "web": {
@@ -55,14 +69,118 @@
           }
         }
       ],
+      "expo-dev-client",
+      "expo-updates",
       "expo-sqlite",
-      "expo-secure-store",
-      "expo-widgets",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
       "expo-localization",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Turnproof uses the camera to take time-stamped before and after photos of each room as proof of your turnover.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Turnproof adds your location to each proof photo's stamp so a host can see it was taken at the property. You can turn this off in Settings.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false,
+          "motionUsagePermission": false,
+          "isAndroidMotionActivityEnabled": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Turnproof lets you attach reference photos from your library. They are labelled as reference photos, never as verified proof.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icons/icon-monochrome.png",
+          "color": "#1F6B4A",
+          "defaultChannel": "turnovers"
+        }
+      ],
+      "expo-task-manager",
       "expo-background-task",
-      "expo-build-properties",
-      "react-native-android-widget",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.saadofficial.turnproof.widgets",
+          "groupIdentifier": "group.com.saadofficial.turnproof",
+          "frequentUpdates": true,
+          "enablePushNotifications": false,
+          "widgets": [
+            {
+              "name": "NextTurnover",
+              "displayName": "Next turnover",
+              "description": "Your next turnover with its checkout time and countdown, and today's count.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "accessoryCircular",
+                  "accessoryRectangular",
+                  "accessoryInline"
+                ]
+              },
+              "android": null
+            }
+          ]
+        }
+      ],
+      [
+        "expo-live-updates",
+        {
+          "channelId": "turnover-live",
+          "channelName": "Turnover in progress"
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "NextTurnover",
+              "label": "Turnproof next turnover",
+              "description": "Your next turnover with its checkout time and countdown, and today's count.",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "320dp",
+              "maxResizeHeight": "250dp",
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/widget-preview/next-turnover-2x2.png",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
