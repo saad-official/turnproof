@@ -80,7 +80,6 @@ export function setupNotifications(): Promise<void> {
           lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
           vibrationPattern: [0, 200, 120, 200],
           enableVibrate: true,
-          sound: 'default',
         });
         // expo-live-updates creates this channel at default importance; the in-progress status
         // must stay silent (it updates every room).
