@@ -102,7 +102,7 @@ export function PhotoScreen() {
           </AppText>
         ) : null}
         {check && check.notes.length > 0 && !reference ? (
-          <AppText variant="caption" tone="tertiary">
+          <AppText variant="caption" tone="secondary">
             {check.notes.map((n) => STAMP_REASON_TEXT[n]).join('. ')}
           </AppText>
         ) : null}

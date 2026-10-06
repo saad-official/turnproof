@@ -135,21 +135,16 @@ export function ListGroup({ children, footer }: { children: ReactNode; footer?: 
   if (rows.length === 0) return null;
   return (
     <View style={{ gap: spacing.xs }}>
-      <View
-        style={{
-          backgroundColor: colors.surfaceElevated,
-          borderRadius: radius.md,
-          borderCurve: 'continuous',
-          overflow: 'hidden',
-          boxShadow: shadow('sm'),
-        }}
-      >
-        {rows.map((row, i) => (
-          <Fragment key={row.key ?? i}>
-            {i > 0 ? <View style={{ height: hairline, backgroundColor: colors.separator, marginStart: spacing.md }} /> : null}
-            {row}
-          </Fragment>
-        ))}
+      {/* The shadow sits on the opaque outer card; only the inner view clips the pressed rows. */}
+      <View style={{ backgroundColor: colors.surfaceElevated, borderRadius: radius.md, borderCurve: 'continuous', boxShadow: shadow('sm') }}>
+        <View style={{ borderRadius: radius.md, borderCurve: 'continuous', overflow: 'hidden' }}>
+          {rows.map((row, i) => (
+            <Fragment key={row.key ?? i}>
+              {i > 0 ? <View style={{ height: hairline, backgroundColor: colors.separator, marginStart: spacing.md }} /> : null}
+              {row}
+            </Fragment>
+          ))}
+        </View>
       </View>
       {footer ? (
         <AppText variant="caption" tone="secondary" style={{ paddingHorizontal: spacing.md }}>

@@ -106,13 +106,16 @@ export function GlassBar({ title, subtitle, progress, trailing, children, progre
     );
   }
   if (process.env.EXPO_OS === 'ios' && !reduce) {
+    // Material blur, like the system bars: no drop shadow on a translucent surface.
     return (
-      <View style={[shape, { boxShadow: shadow('md') }, style]}>
-        <BlurView tint={isDark ? 'systemThickMaterialDark' : 'systemThickMaterialLight'} intensity={90} style={[shape, { overflow: 'hidden' }]}>
-          <View style={{ position: 'absolute', top: 0, bottom: 0, start: 0, end: 0, backgroundColor: colors.accentSoft, opacity: 0.5 }} />
-          {body}
-        </BlurView>
-      </View>
+      <BlurView
+        tint={isDark ? 'systemThickMaterialDark' : 'systemThickMaterialLight'}
+        intensity={90}
+        style={[shape, { overflow: 'hidden' }, style]}
+      >
+        <View style={{ position: 'absolute', top: 0, bottom: 0, start: 0, end: 0, backgroundColor: colors.accentSoft, opacity: 0.5 }} />
+        {body}
+      </BlurView>
     );
   }
   return <View style={[shape, { backgroundColor: colors.surfaceElevated, boxShadow: shadow('md') }, style]}>{body}</View>;

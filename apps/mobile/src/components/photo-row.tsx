@@ -73,7 +73,7 @@ export function PhotoRow({ photos, turnover, stampGps, addLabel, onAdd, required
   const [mountedAt] = useState(() => Date.now());
   if (!onAdd && photos.length === 0) {
     return emptyLabel ? (
-      <AppText variant="callout" tone="tertiary">
+      <AppText variant="callout" tone="secondary">
         {emptyLabel}
       </AppText>
     ) : null;

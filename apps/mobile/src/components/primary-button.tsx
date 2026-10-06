@@ -47,13 +47,16 @@ export function PrimaryButton({
   const [pressed, setPressed] = useState(false);
   const inactive = !!disabled || !!loading;
 
-  const fill = {
+  const variantFill = {
     primary: { bg: colors.accent, fg: colors.onAccent },
     secondary: { bg: colors.accentSoft, fg: colors.accentText },
     ghost: { bg: 'transparent', fg: colors.accentText },
     issue: { bg: colors.issue, fg: colors.onIssue },
     destructive: { bg: colors.issueSoft, fg: colors.issueText },
   }[variant];
+  // Disabled is a quiet well with a readable label (a 45% fade left white-on-pale-green and
+  // dark-on-murky-green labels unreadable, e.g. "Room done" while items are missing).
+  const fill = disabled ? { bg: variant === 'ghost' ? 'transparent' : colors.surfaceSunken, fg: colors.textTertiary } : variantFill;
 
   return (
     <Pressable
@@ -80,7 +83,6 @@ export function PrimaryButton({
           alignItems: 'center',
           justifyContent: 'center',
           gap: spacing.xs,
-          opacity: disabled ? 0.45 : 1,
           transform: [{ scale: pressed && !inactive ? 0.97 : 1 }],
           transitionProperty: 'transform',
           transitionDuration: 120,

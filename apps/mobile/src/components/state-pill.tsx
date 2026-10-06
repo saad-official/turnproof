@@ -29,7 +29,7 @@ const META: Record<PillKind, Meta> = {
   'proof-active': { label: 'Link live', fg: 'accentText', bg: 'accentSoft', icon: icons.link },
   'proof-expired': { label: 'Link expired', fg: 'textSecondary', bg: 'surfaceSunken', icon: icons.clock },
   'proof-revoked': { label: 'Link revoked', fg: 'textSecondary', bg: 'surfaceSunken', icon: icons.close },
-  'proof-none': { label: 'No link', fg: 'textTertiary', bg: 'surfaceSunken' },
+  'proof-none': { label: 'No link', fg: 'textSecondary', bg: 'surfaceSunken' },
   scheduled: { label: 'Scheduled', fg: 'textSecondary', bg: 'surfaceSunken', icon: icons.clock },
   'in-progress': { label: 'In progress', fg: 'onAccent', bg: 'accent', icon: icons.timer },
   finished: { label: 'Finished', fg: 'accentText', bg: 'accentSoft', icon: icons.check },

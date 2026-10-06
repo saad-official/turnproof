@@ -2,7 +2,7 @@
 // app paints with (toasts, scrims, photo chips, the always-dark camera). Pure and memoised.
 import {
   colors as palettes,
-  SHADOW_COLOR,
+  shadowColor,
   shadows,
   type ColorPalette,
   type ColorScheme,
@@ -22,6 +22,14 @@ export type ThemeColors = ColorPalette & {
   /** Stamp chips drawn on top of photos: the same in both schemes (they sit on the image). */
   photoChip: string;
   onPhotoChip: string;
+  /** The GPS dot inside a stamp chip (bright teal on the dark chip). */
+  photoGps: string;
+  /**
+   * The verified badge on a photo: deep teal with a white check and a white ring, so it reads on
+   * bright and dark photos alike, in either scheme.
+   */
+  photoVerified: string;
+  onPhotoVerified: string;
   /** The camera screen is always dark, whatever the app scheme. */
   cameraBackground: string;
   cameraControl: string;
@@ -36,7 +44,10 @@ export type AppTheme = {
   scheme: ColorScheme;
   isDark: boolean;
   colors: ThemeColors;
-  /** CSS `boxShadow` for an elevation level (never legacy shadow props). */
+  /**
+   * CSS `boxShadow` for an elevation level (never legacy shadow / elevation props). Only on an
+   * opaque, rounded surface: never on glass, blur or a transparent view.
+   */
   shadow: (level: ShadowLevel) => string;
 };
 
@@ -51,7 +62,6 @@ export function withAlpha(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-const SHADOW_RGB = rgb(SHADOW_COLOR).join(', ');
 const cache = new Map<ColorScheme, AppTheme>();
 
 /** The camera always paints with the dark palette. */
@@ -63,16 +73,20 @@ export function buildAppTheme(scheme: ColorScheme): AppTheme {
   const base: ColorPalette = palettes[scheme];
   const inverse: ColorPalette = palettes[scheme === 'dark' ? 'light' : 'dark'];
   const isDark = scheme === 'dark';
+  const shadowRgb = rgb(shadowColor(scheme)).join(', ');
   const colors: ThemeColors = {
     ...base,
     inverseSurface: inverse.surfaceElevated,
     inverseText: inverse.text,
     inverseAccent: inverse.accentText,
-    scrim: `rgba(${SHADOW_RGB}, ${isDark ? 0.6 : 0.35})`,
+    scrim: `rgba(${shadowRgb}, ${isDark ? 0.6 : 0.35})`,
     track: isDark ? base.border : base.surfaceSunken,
-    photoChip: withAlpha(cameraPalette.surfaceSunken, 0.7),
+    photoChip: withAlpha(cameraPalette.surface, 0.72),
     onPhotoChip: cameraPalette.text,
-    cameraBackground: cameraPalette.surfaceSunken,
+    photoGps: cameraPalette.verified,
+    photoVerified: palettes.light.verified,
+    onPhotoVerified: palettes.light.onVerified,
+    cameraBackground: cameraPalette.surface,
     cameraControl: withAlpha(cameraPalette.surfaceElevated, 0.72),
     cameraText: cameraPalette.text,
     cameraTextSecondary: cameraPalette.textSecondary,
@@ -86,7 +100,7 @@ export function buildAppTheme(scheme: ColorScheme): AppTheme {
     colors,
     shadow: (level) => {
       const s = levels[level];
-      return `${s.offsetX}px ${s.offsetY}px ${s.blur}px ${s.spread}px rgba(${SHADOW_RGB}, ${s.opacity})`;
+      return `${s.offsetX}px ${s.offsetY}px ${s.blur}px ${s.spread}px rgba(${shadowRgb}, ${s.opacity})`;
     },
   };
   cache.set(scheme, theme);

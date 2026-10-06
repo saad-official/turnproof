@@ -48,7 +48,7 @@ export function StampChip({ takenAt, hasGps, compact }: { takenAt: string; hasGp
           width: dotSize - 3,
           height: dotSize - 3,
           borderRadius: radius.pill,
-          backgroundColor: hasGps ? colors.verified : 'transparent',
+          backgroundColor: hasGps ? colors.photoGps : 'transparent',
           borderWidth: hasGps ? 0 : 1.5,
           borderColor: colors.onPhotoChip,
         }}
@@ -131,15 +131,18 @@ export function PhotoTile({ photo, turnover, stampGps, size = tileSize, onPress,
               position: 'absolute',
               top: spacing.xxs,
               end: spacing.xxs,
-              width: 22,
-              height: 22,
+              width: 24,
+              height: 24,
               borderRadius: radius.pill,
-              backgroundColor: colors.verified,
+              // A white ring around deep teal: reads on bright and dark photos in either scheme.
+              borderWidth: 2,
+              borderColor: colors.onPhotoVerified,
+              backgroundColor: colors.photoVerified,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Icon name={icons.verified} size={13} color={colors.onVerified} weight="bold" />
+            <Icon name={icons.verified} size={12} color={colors.onPhotoVerified} weight="bold" />
           </View>
         ) : null}
         <View style={{ position: 'absolute', bottom: spacing.xxs, start: spacing.xxs, end: spacing.xxs, flexDirection: 'row' }}>

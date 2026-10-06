@@ -63,7 +63,7 @@ export function RoomStepper({
               borderRadius: radius.pill,
               backgroundColor: room.complete ? colors.accent : colors.track,
               borderWidth: room.complete ? 0 : 1.5,
-              borderColor: colors.border,
+              borderColor: colors.textTertiary,
             }}
           />
         </Pressable>

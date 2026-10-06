@@ -53,7 +53,8 @@ export function ChecklistRow({
           height: BOX,
           borderRadius: radius.pill,
           borderWidth: 2,
-          borderColor: checked ? colors.accent : colors.border,
+          // The empty ring needs 3:1 against the card (the pale `border` role was ~1.5:1).
+          borderColor: checked ? colors.accent : colors.textTertiary,
           backgroundColor: checked ? colors.accent : 'transparent',
           alignItems: 'center',
           justifyContent: 'center',

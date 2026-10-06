@@ -33,7 +33,7 @@ export function SectionHeader({
           {title}
         </AppText>
         {detail ? (
-          <AppText variant="caption" tone="tertiary">
+          <AppText variant="caption" tone="secondary">
             {detail}
           </AppText>
         ) : null}

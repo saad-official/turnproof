@@ -249,7 +249,7 @@ export function HistoryScreen() {
               <AppText variant="callout" tone="secondary" weight="600" accessibilityRole="header">
                 {item.title}
               </AppText>
-              <AppText variant="caption" tone="tertiary">
+              <AppText variant="caption" tone="secondary">
                 {plural(item.count, 'turnover')}
               </AppText>
             </View>

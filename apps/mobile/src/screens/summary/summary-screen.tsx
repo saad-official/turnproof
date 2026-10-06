@@ -29,12 +29,21 @@ import { ProofSection } from './proof-section';
 const SUMMARY_TILE = 88;
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: 'issue' }) {
-  const { colors } = useTheme();
+  const { colors, shadow } = useTheme();
   return (
     <View
       accessible
       accessibilityLabel={`${label}: ${value}`}
-      style={{ flexBasis: '47%', flexGrow: 1, backgroundColor: colors.surfaceElevated, borderRadius: radius.md, borderCurve: 'continuous', padding: spacing.md, gap: 2 }}
+      style={{
+        flexBasis: '47%',
+        flexGrow: 1,
+        backgroundColor: colors.surfaceElevated,
+        borderRadius: radius.md,
+        borderCurve: 'continuous',
+        boxShadow: shadow('sm'),
+        padding: spacing.md,
+        gap: 2,
+      }}
     >
       <AppText variant="caption" tone="secondary">
         {label}

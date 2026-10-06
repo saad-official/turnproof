@@ -99,7 +99,7 @@ function StampPreview({ gps }: { gps: GpsStatus }) {
           width: dotSize,
           height: dotSize,
           borderRadius: radius.pill,
-          backgroundColor: gps === 'on' ? colors.verified : 'transparent',
+          backgroundColor: gps === 'on' ? colors.photoGps : 'transparent',
           borderWidth: gps === 'on' ? 0 : 1.5,
           borderColor: colors.onPhotoChip,
         }}

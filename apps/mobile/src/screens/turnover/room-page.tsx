@@ -128,7 +128,7 @@ export function RoomPage({
             ))}
           </ListGroup>
         ) : (
-          <AppText variant="callout" tone="tertiary">
+          <AppText variant="callout" tone="secondary">
             No checklist for this room. Edit the property to add items.
           </AppText>
         )}

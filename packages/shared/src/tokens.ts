@@ -76,7 +76,8 @@ export const colors = {
   dark: {
     surface: "#121417",
     surfaceElevated: "#1C2025",
-    surfaceSunken: "#0C0E10",
+    /** A raised fill, not a darker pit: a near-black well vanished on the night surface. */
+    surfaceSunken: "#24292F",
     text: "#ECEEF0",
     textSecondary: "#A9B0B7",
     textTertiary: "#6F777E",
@@ -95,7 +96,8 @@ export const colors = {
     onVerified: "#04201F",
     warning: "#E8B04B",
     warningSoft: "#33270F",
-    separator: "#262B31",
+    /** Hairlines read about as strongly as the light scheme's (1.3:1 on cards). */
+    separator: "#2E343B",
     border: "#363C43",
   },
 } as const satisfies Record<ColorScheme, ColorPalette>;
@@ -174,7 +176,7 @@ export type ShadowToken = {
   offsetY: number;
   blur: number;
   spread: number;
-  /** Shadow colour is always `SHADOW_COLOR`; opacity carries the weight. */
+  /** Shadow colour is `shadowColor(scheme)`; opacity carries the weight. */
   opacity: number;
   /** Android elevation equivalent. */
   elevation: number;
@@ -182,6 +184,17 @@ export type ShadowToken = {
 
 /** A warm ink, so shadows on linen never look grey-blue. */
 export const SHADOW_COLOR = "#2B2620";
+
+/**
+ * Night shadows are pure black: the warm ink is lighter than the night surface, so it drew a
+ * muddy light halo around every card instead of a shadow.
+ */
+export const SHADOW_COLOR_DARK = "#000000";
+
+/** The shadow colour for a scheme. */
+export function shadowColor(scheme: ColorScheme): string {
+  return scheme === "dark" ? SHADOW_COLOR_DARK : SHADOW_COLOR;
+}
 
 export const shadows = {
   light: {
@@ -206,10 +219,11 @@ function kebab(value: string): string {
   return value.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
 }
 
-function shadowCss(shadow: ShadowToken): string {
-  const r = parseInt(SHADOW_COLOR.slice(1, 3), 16);
-  const g = parseInt(SHADOW_COLOR.slice(3, 5), 16);
-  const b = parseInt(SHADOW_COLOR.slice(5, 7), 16);
+function shadowCss(shadow: ShadowToken, scheme: ColorScheme): string {
+  const hex = shadowColor(scheme);
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
   return `${shadow.offsetX} ${shadow.offsetY}px ${shadow.blur}px ${shadow.spread}px rgb(${r} ${g} ${b} / ${shadow.opacity})`;
 }
 
@@ -233,6 +247,6 @@ export function toCssVars(scheme: ColorScheme): Record<CssVarName, string> {
   for (const [name, points] of Object.entries(motion.easing)) {
     vars[`--tp-ease-${name}`] = `cubic-bezier(${points.join(", ")})`;
   }
-  for (const [name, shadow] of Object.entries(shadows[scheme])) vars[`--tp-shadow-${name}`] = shadowCss(shadow);
+  for (const [name, shadow] of Object.entries(shadows[scheme])) vars[`--tp-shadow-${name}`] = shadowCss(shadow, scheme);
   return vars;
 }

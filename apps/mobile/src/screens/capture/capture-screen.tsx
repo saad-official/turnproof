@@ -28,7 +28,7 @@ import { useSettings } from '@/hooks/use-settings';
 import { useTurnover } from '@/hooks/use-turnovers';
 import { CaptureError, importReferencePhoto, takeProofPhoto } from '@/native/capture';
 import { haptics } from '@/native/haptics';
-import { easing, radius, spacing, thumbSize, useTheme } from '@/theme';
+import { buildAppTheme, easing, radius, spacing, thumbSize, ThemeContext, useTheme } from '@/theme';
 
 type Phase = 'before' | 'after';
 
@@ -109,13 +109,26 @@ function PermissionGate({ canAskAgain, onAsk }: { canAskAgain: boolean; onAsk: (
   );
 }
 
+/** The camera is always dark, whatever the app scheme. */
+const CAMERA_THEME = buildAppTheme('dark');
+
 /**
  * `capture?turnoverId&roomId&phase`: full-bleed camera with the live stamp preview, a big shutter,
  * flash and flip, and Done back to the room. Each shot goes through `takeProofPhoto` (resize,
  * EXIF strip, sha256, GPS fix) → `capturePhoto`, and drops into the thumbnail strip.
  * A clearly labelled secondary action imports a *reference* photo from the library.
+ * Always dark: the whole screen resolves the dark palette, so buttons, links and dots drawn on the
+ * camera never use light-scheme greens on near-black.
  */
 export function CaptureScreen() {
+  return (
+    <ThemeContext value={CAMERA_THEME}>
+      <CaptureContent />
+    </ThemeContext>
+  );
+}
+
+function CaptureContent() {
   const { turnoverId, roomId, phase: rawPhase } = useLocalSearchParams<{ turnoverId: string; roomId: string; phase: string }>();
   const phase: Phase = rawPhase === 'after' ? 'after' : 'before';
   const { colors } = useTheme();

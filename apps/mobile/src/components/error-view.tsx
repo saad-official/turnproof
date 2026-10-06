@@ -24,7 +24,7 @@ export function ErrorView({ error, retry }: ErrorBoundaryProps) {
         action={<PrimaryButton title="Try again" onPress={retry} block={false} />}
       />
       <View style={{ paddingHorizontal: spacing.md }}>
-        <AppText variant="caption" tone="tertiary" selectable align="center">
+        <AppText variant="caption" tone="secondary" selectable align="center">
           {error.message}
         </AppText>
       </View>
