@@ -34,7 +34,7 @@ export function TurnoverScreen() {
             icon={icons.calendar}
             title="This turnover is gone"
             body="It was deleted, or it belongs to a property you no longer share."
-            action={<PrimaryButton title="Back to Today" block={false} onPress={() => router.dismissTo('/today')} />}
+            action={<PrimaryButton title="Back to Today" block={false} style={{ alignSelf: 'center' }} onPress={() => router.dismissTo('/today')} />}
           />
         </ScrollView>
       </>

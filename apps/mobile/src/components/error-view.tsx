@@ -21,7 +21,7 @@ export function ErrorView({ error, retry }: ErrorBoundaryProps) {
         icon={icons.issue}
         title="This screen hit a problem"
         body="Your turnovers and photos are safe on this phone. Try again; if it keeps happening, contact support with the message below."
-        action={<PrimaryButton title="Try again" onPress={retry} block={false} />}
+        action={<PrimaryButton title="Try again" onPress={retry} block={false} style={{ alignSelf: 'center' }} />}
       />
       <View style={{ paddingHorizontal: spacing.md }}>
         <AppText variant="caption" tone="secondary" selectable align="center">
